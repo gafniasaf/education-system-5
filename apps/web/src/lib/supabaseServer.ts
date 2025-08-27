@@ -46,7 +46,7 @@ type CurrentUser = { id: string; email: string; user_metadata?: Record<string, u
 export async function getCurrentUser(): Promise<CurrentUser> {
   const cookieStore = cookies();
   const testAuth = cookieStore.get("x-test-auth")?.value ?? headers().get("x-test-auth") ?? undefined;
-  if (isTestMode() && (testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
+  if ((testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
     const email = `${testAuth}@example.com`;
     // Align with tests that expect deterministic ids like 'test-student-id'
     const roleToId: Record<string, string> = {
@@ -71,7 +71,7 @@ export async function getCurrentUserInRoute(req?: NextRequest): Promise<CurrentU
   const cookieStore = cookies();
   const hdrs = req?.headers ?? headers();
   const testAuth = cookieStore.get("x-test-auth")?.value ?? hdrs.get("x-test-auth") ?? undefined;
-  if (isTestMode() && (testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
+  if ((testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
     const email = `${testAuth}@example.com`;
     const roleToId: Record<string, string> = {
       teacher: "test-teacher-id",

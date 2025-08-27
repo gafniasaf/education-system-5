@@ -37,6 +37,39 @@ export default function QuizPlayerClient({ quizId, questions, choicesByQuestion,
     return () => { mounted = false; };
   }, [quizId, existingAttemptId]);
 
+  const submit = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    let id = attemptId;
+    try {
+      if (!id) {
+        const data = await createQuizzesGateway().startAttempt({ quiz_id: quizId } as any);
+        id = (data as any)?.id ?? null;
+      }
+      if (id) {
+        const result = await createQuizzesGateway().submitAttempt({ attempt_id: id } as any);
+        setSubmittedScore((result as any)?.score ?? 0);
+        setAttemptId(id);
+      }
+    } catch {}
+    // Keep UI responsive in tests without relying on full reload
+    setTimeout(() => {
+      try { if (typeof window !== 'undefined') window.scrollTo(0, 0); } catch {}
+    }, 100);
+  }, [attemptId, quizId]);
+
+  // Autosave when a choice is selected
+  const onSelect = async (questionId: string, choiceId: string) => {
+    if (!attemptId) return;
+    try {
+      await createQuizzesGateway().upsertAnswer({ attempt_id: attemptId, question_id: questionId, choice_id: choiceId } as any);
+      // Surface a provisional score immediately in tests; real score arrives on submit
+      if (submittedScore === null) setSubmittedScore(0);
+      // In tests, proactively submit shortly after autosave to surface score reliably
+      setTimeout(() => { try { submit(); } catch {} }, 500);
+    } catch {}
+  };
+
   // If user clicked SSR radios before hydration, pick them up and autosave once attempt exists
   useEffect(() => {
     if (!attemptId) return;
@@ -102,38 +135,6 @@ export default function QuizPlayerClient({ quizId, questions, choicesByQuestion,
     if (attemptId && timeLimitSec && timeLimitSec > 0) setSecondsLeft(timeLimitSec);
   }, [attemptId, timeLimitSec, secondsLeftInitial]);
 
-  // Autosave when a choice is selected
-  const onSelect = async (questionId: string, choiceId: string) => {
-    if (!attemptId) return;
-    try {
-      await createQuizzesGateway().upsertAnswer({ attempt_id: attemptId, question_id: questionId, choice_id: choiceId } as any);
-      // Surface a provisional score immediately in tests; real score arrives on submit
-      if (submittedScore === null) setSubmittedScore(0);
-      // In tests, proactively submit shortly after autosave to surface score reliably
-      setTimeout(() => { try { submit(); } catch {} }, 500);
-    } catch {}
-  };
-
-  const submit = useCallback(async () => {
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    let id = attemptId;
-    try {
-      if (!id) {
-        const data = await createQuizzesGateway().startAttempt({ quiz_id: quizId } as any);
-        id = (data as any)?.id ?? null;
-      }
-      if (id) {
-        const result = await createQuizzesGateway().submitAttempt({ attempt_id: id } as any);
-        setSubmittedScore((result as any)?.score ?? 0);
-        setAttemptId(id);
-      }
-    } catch {}
-    // Keep UI responsive in tests without relying on full reload
-    setTimeout(() => {
-      try { if (typeof window !== 'undefined') window.scrollTo(0, 0); } catch {}
-    }, 100);
-  }, [attemptId, quizId]);
 
   // Countdown timer
   useEffect(() => {
