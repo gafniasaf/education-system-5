@@ -15,9 +15,17 @@ export function getInMemoryEvents(): AppEvent[] {
   return [...memoryEvents];
 }
 
+export function __clearInMemoryEventsForTests() {
+  if (isTestMode()) {
+    memoryEvents.length = 0;
+  }
+}
+
 export async function recordEvent(ev: AppEvent): Promise<void> {
   if (isTestMode()) {
     memoryEvents.push({ ...ev });
+    // Keep a reasonable cap to avoid unbounded growth in long test runs
+    if (memoryEvents.length > 1000) memoryEvents.splice(0, memoryEvents.length - 1000);
     return;
   }
   const supabase = getRouteHandlerSupabase();

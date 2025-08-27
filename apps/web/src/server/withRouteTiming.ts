@@ -42,8 +42,8 @@ export function withRouteTiming<T extends (...args: any[]) => Promise<Response>>
             return Response.json({ error: { code: 'FORBIDDEN', message: 'CSRF check failed' }, requestId }, { status: 403, headers: { 'x-request-id': requestId } });
           }
         }
-        // Optional double-submit CSRF token enforcement
-        if (process.env.CSRF_DOUBLE_SUBMIT === '1') {
+        // Optional double-submit CSRF token enforcement (skip for runtime paths)
+        if (process.env.CSRF_DOUBLE_SUBMIT === '1' && !isRuntimePath) {
           const headerToken = req.headers.get('x-csrf-token') || '';
           const cookieHeader = req.headers.get('cookie') || '';
           const cookiesMap: Record<string, string> = {};
@@ -59,6 +59,7 @@ export function withRouteTiming<T extends (...args: any[]) => Promise<Response>>
           }
         }
         // Optional global per-IP mutation rate limit
+        // Tests will explicitly set GLOBAL_MUTATION_RATE_LIMIT when needed
         const limit = Number(process.env.GLOBAL_MUTATION_RATE_LIMIT || 0);
         if (limit > 0) {
           const windowMs = Number(process.env.GLOBAL_MUTATION_RATE_WINDOW_MS || 60000);

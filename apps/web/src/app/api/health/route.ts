@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     } as Record<string, boolean>;
-    if (process.env.NODE_ENV === 'production' && process.env.RUNTIME_API_V2 === '1') {
+    if (process.env.RUNTIME_API_V2 === '1') {
       requiredEnvs['NEXT_RUNTIME_PUBLIC_KEY'] = !!process.env.NEXT_RUNTIME_PUBLIC_KEY;
       requiredEnvs['NEXT_RUNTIME_PRIVATE_KEY'] = !!process.env.NEXT_RUNTIME_PRIVATE_KEY;
       requiredEnvs['NEXT_RUNTIME_KEY_ID'] = !!process.env.NEXT_RUNTIME_KEY_ID;

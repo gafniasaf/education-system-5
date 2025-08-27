@@ -17,7 +17,9 @@ describe('Admin Reports (dashboard)', () => {
     );
     const ui = await AdminReportsPage();
     render(ui);
-    await screen.findByText('Reports');
+    // There are two 'Reports' texts (breadcrumb current page and h1). Accept either being present.
+    const items = await screen.findAllByText('Reports');
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 });
 

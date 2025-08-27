@@ -10,9 +10,10 @@ import { createApiHandler } from "@/server/apiHandler";
 import { withRouteTiming } from "@/server/withRouteTiming";
 import { updateUserRole } from "@/server/services/users";
 import { jsonDto } from "@/lib/jsonDto";
+import { z } from "zod";
 
 export const PATCH = withRouteTiming(createApiHandler({
-	schema: updateRoleRequest,
+	schema: (z.object({ userId: z.string().min(1), role: (updateRoleRequest as any).shape.role }) as any),
 	handler: async (input) => {
 		const caller = await getCurrentUserInRoute();
 		const requestId = crypto.randomUUID();

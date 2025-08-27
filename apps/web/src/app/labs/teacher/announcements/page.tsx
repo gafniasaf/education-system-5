@@ -26,7 +26,7 @@ export default async function TeacherAnnouncementsPage({ searchParams }: { searc
   const selectedCourseId = (searchParams?.course_id ?? '').trim() || (courses[0]?.id ?? '');
   let ann: Announcement[] = [];
   if (selectedCourseId) {
-    try { ann = await createAnnouncementsGateway().list({ courseId: selectedCourseId, includeUnpublished: true }) as any; } catch { ann = []; }
+    try { ann = await createAnnouncementsGateway().listByCourse(selectedCourseId, { includeUnpublished: true }) as any; } catch { ann = []; }
   }
 
   async function createAction(formData: FormData) {

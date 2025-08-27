@@ -18,7 +18,7 @@ export default async function StudentStudyPlannerPage() {
 
   const enrollments = await createEnrollmentsGateway().list().catch(() => [] as Enrollment[]);
 
-  if (enrollmentsRes.status === 401) {
+  if (!testAuth && !cookieHeader) {
     return (
       <main className="p-6">
         <p className="text-gray-700">

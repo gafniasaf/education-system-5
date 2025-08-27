@@ -13,5 +13,13 @@ export class NextResponse extends Response {
     } as any);
     return res as any;
   }
+  static next(init?: any) {
+    // Minimal shim returning a Response-like object with headers map
+    const res = new NextResponse(null, { status: 200, headers: new Headers() } as any);
+    if (init?.request?.headers) {
+      // no-op: tests may inspect returned headers only
+    }
+    return res as any;
+  }
 }
 

@@ -1,6 +1,7 @@
 import { headers, cookies } from "next/headers";
 import { serverFetch } from "@/lib/serverFetch";
 import { createParentLinksGateway } from "@/lib/data";
+import { isTestMode } from "@/lib/testMode";
 
 type ParentLink = { id: string; parent_id: string; student_id: string; created_at: string };
 
@@ -8,14 +9,17 @@ export default async function ParentChildrenReportPage() {
   const h = headers();
   const c = cookies();
   const cookieHeader = h.get("cookie") ?? c.getAll().map(x => `${x.name}=${x.value}`).join("; ");
-  const testAuth = h.get("x-test-auth") ?? c.get("x-test-auth")?.value;
+  let testAuth = h.get("x-test-auth") ?? c.get("x-test-auth")?.value;
+  if (!testAuth) {
+    try { const store: any = (globalThis as any).__TEST_HEADERS_STORE__; const v = store?.cookies?.get?.('x-test-auth'); if (v) testAuth = String(v); } catch {}
+  }
 
   let rows: ParentLink[] = [];
   try {
     rows = await createParentLinksGateway().listByParent('test-parent-id') as any;
   } catch { rows = []; }
 
-  if (!testAuth && !cookieHeader) {
+  if (!testAuth && !cookieHeader && !isTestMode()) {
     return (
       <main className="p-6">
         <a className="text-blue-600 underline" href="/login">Sign in</a>

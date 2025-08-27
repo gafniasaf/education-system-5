@@ -54,7 +54,9 @@ function percentile(arr: number[], p: number): number {
 
 export function snapshot() {
   const out: Record<string, any> = {};
-  for (const [k, arr] of timings.entries()) {
+  const keys = new Set<string>([...timings.keys(), ...errors.keys(), ...inFlight.keys()]);
+  for (const k of keys) {
+    const arr = timings.get(k) ?? [];
     out[k] = {
       count: arr.length,
       p50: percentile(arr, 50),

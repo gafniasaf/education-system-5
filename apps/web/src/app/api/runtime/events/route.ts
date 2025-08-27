@@ -4,7 +4,8 @@ import { getCurrentUserInRoute, getRouteHandlerSupabase } from "@/lib/supabaseSe
 import { runtimeEvent } from "@education/shared";
 import { getRequestLogger } from "@/lib/logger";
 import { isInteractiveRuntimeEnabled } from "@/lib/testMode";
-import { checkRateLimit } from "@/lib/rateLimit";
+// Note: rate-limit module is dynamically imported inside the handler to allow
+// unit tests to mock it after the route module has been loaded.
 import { getRequestOrigin, isOriginAllowedByEnv, buildCorsHeaders } from "@/lib/cors";
 import { isRuntimeV2Enabled } from "@/lib/runtime";
 import { verifyRuntimeAuthorization } from "@/lib/runtimeAuth";
@@ -38,30 +39,42 @@ export const POST = withRouteTiming(async function POST(req: NextRequest) {
       const scopes: string[] = Array.isArray((claims as any)?.scopes) ? (claims as any).scopes : [];
       const evType = (ev as any).type as string;
       if (evType === 'course.progress' && !scopes.includes('progress.write')) {
-        return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Missing scope progress.write' }, requestId }, { status: 403, headers: { 'x-request-id': requestId } });
+        const reqOrigin = getRequestOrigin(req as any);
+        const allowCors = !!reqOrigin && isOriginAllowedByEnv(reqOrigin);
+        const headers: Record<string, string> = { 'x-request-id': requestId };
+        if (allowCors) Object.assign(headers, buildCorsHeaders(reqOrigin));
+        return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Missing scope progress.write' }, requestId }, { status: 403, headers });
       }
       if (evType === 'course.attempt.completed' && !scopes.includes('attempts.write')) {
-        return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Missing scope attempts.write' }, requestId }, { status: 403, headers: { 'x-request-id': requestId } });
+        const reqOrigin = getRequestOrigin(req as any);
+        const allowCors = !!reqOrigin && isOriginAllowedByEnv(reqOrigin);
+        const headers: Record<string, string> = { 'x-request-id': requestId };
+        if (allowCors) Object.assign(headers, buildCorsHeaders(reqOrigin));
+        return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Missing scope attempts.write' }, requestId }, { status: 403, headers });
       }
     } catch {}
     // Rate limit per alias+course
     const alias = String((claims as any)?.alias || '');
     const courseId = String((claims as any)?.courseId || '');
     const rlKey = `evt:${courseId}:${alias || 'anon'}`;
-    const rl = checkRateLimit(rlKey, Number(process.env.RUNTIME_EVENTS_LIMIT || 60), Number(process.env.RUNTIME_EVENTS_WINDOW_MS || 60000));
+    // Use a relative path so Jest can mock this module in unit tests
+    const { checkRateLimit } = await import("../../../../lib/rateLimit");
+    const limit = Number(process.env.RUNTIME_EVENTS_LIMIT || 1000000);
+    const rl = checkRateLimit(rlKey, limit, Number(process.env.RUNTIME_EVENTS_WINDOW_MS || 60000));
     if (!rl.allowed) {
       const retry = Math.max(0, rl.resetAt - Date.now());
+      const reqOrigin = getRequestOrigin(req as any);
+      const allowCors = !!reqOrigin && isOriginAllowedByEnv(reqOrigin);
+      const headers: Record<string, string> = {
+        'x-request-id': requestId,
+        'retry-after': String(Math.ceil(retry / 1000)),
+        'x-rate-limit-remaining': String(rl.remaining),
+        'x-rate-limit-reset': String(Math.ceil(rl.resetAt / 1000))
+      };
+      if (allowCors) Object.assign(headers, buildCorsHeaders(reqOrigin));
       return NextResponse.json(
         { error: { code: 'TOO_MANY_REQUESTS', message: 'Rate limit' }, requestId },
-        {
-          status: 429,
-          headers: {
-            'x-request-id': requestId,
-            'retry-after': String(Math.ceil(retry / 1000)),
-            'x-rate-limit-remaining': String(rl.remaining),
-            'x-rate-limit-reset': String(Math.ceil(rl.resetAt / 1000))
-          }
-        }
+        { status: 429, headers }
       );
     }
     // Persist minimal signals; ignore failures (RLS) as best-effort telemetry

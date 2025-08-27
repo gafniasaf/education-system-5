@@ -1,24 +1,31 @@
 import { z } from "zod";
 import { fetchJson } from "@/lib/serverFetch";
-import { isTestMode } from "@/lib/testMode";
 
 export type Health = { ok: boolean; ts: number; testMode?: boolean } & Record<string, any>;
 
 export type HealthGateway = {
-  get(): Promise<Health>;
+	get(): Promise<Health>;
 };
 
 function buildHttpGateway(): HealthGateway {
-  return {
-    async get() {
-      return fetchJson(`/api/health`, z.any());
-    }
-  };
+	return {
+		async get() {
+			if (typeof window === 'undefined') {
+				return fetchJson(`/api/health`, z.any());
+			} else {
+				const base = process.env.NEXT_PUBLIC_BASE_URL || '';
+				const url = `${base}/api/health`;
+				const res = await fetch(url, { cache: 'no-store' });
+				const json = await res.json();
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				return z.any().parse(json) as any;
+			}
+		}
+	};
 }
 
-function buildTestGateway(): HealthGateway { return buildHttpGateway(); }
 export function createHttpGateway(): HealthGateway { return buildHttpGateway(); }
-export function createTestGateway(): HealthGateway { return buildTestGateway(); }
-export function createHealthGateway(): HealthGateway { return isTestMode() ? createTestGateway() : createHttpGateway(); }
+export function createTestGateway(): HealthGateway { return buildHttpGateway(); }
+export function createHealthGateway(): HealthGateway { return buildHttpGateway(); }
 
 

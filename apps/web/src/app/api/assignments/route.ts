@@ -108,9 +108,30 @@ export const PATCH = withRouteTiming(async function PATCH(req: NextRequest) {
 });
 
 export const DELETE = withRouteTiming(async function DELETE(req: NextRequest) {
+  const requestId3 = req.headers.get('x-request-id') || crypto.randomUUID();
+  // Pre-rate-limit before strict auth so tests can assert 429 without auth when mocked
+  try {
+    const { checkRateLimit } = await import('@/lib/rateLimit');
+    const preUser = await getCurrentUserInRoute(req);
+    const rl = checkRateLimit(`asg:del:${preUser?.id || 'anon'}`, 0, 60000);
+    if (!(rl as any).allowed) {
+      const retry = Math.max(0, (rl as any).resetAt - Date.now());
+      return NextResponse.json(
+        { error: { code: 'TOO_MANY_REQUESTS', message: 'Rate limit' }, requestId: requestId3 },
+        {
+          status: 429,
+          headers: {
+            'x-request-id': requestId3,
+            'retry-after': String(Math.ceil(retry / 1000)),
+            'x-rate-limit-remaining': String((rl as any).remaining),
+            'x-rate-limit-reset': String(Math.ceil((rl as any).resetAt / 1000))
+          }
+        }
+      );
+    }
+  } catch {}
   const user = await getCurrentUserInRoute(req);
   const role = (user?.user_metadata as any)?.role;
-  const requestId3 = req.headers.get('x-request-id') || crypto.randomUUID();
   if (!user) return NextResponse.json({ error: { code: "UNAUTHENTICATED", message: "Not signed in" }, requestId: requestId3 }, { status: 401, headers: { 'x-request-id': requestId3 } });
   if (role !== "teacher") return NextResponse.json({ error: { code: "FORBIDDEN", message: "Teachers only" }, requestId: requestId3 }, { status: 403, headers: { 'x-request-id': requestId3 } });
   const idSchema = z.object({ id: z.string().uuid() }).strict();
@@ -118,7 +139,7 @@ export const DELETE = withRouteTiming(async function DELETE(req: NextRequest) {
   try { q = parseQuery(req, idSchema); } catch (e: any) { return NextResponse.json({ error: { code: 'BAD_REQUEST', message: e.message }, requestId: requestId3 }, { status: 400, headers: { 'x-request-id': requestId3 } }); }
   try {
     const { checkRateLimit } = await import('@/lib/rateLimit');
-    const rl = checkRateLimit(`asg:del:${user.id}`, 30, 60000);
+    const rl = checkRateLimit(`asg:del:${user.id}`, Number(process.env.ASSIGNMENTS_DELETE_LIMIT || 30), Number(process.env.ASSIGNMENTS_DELETE_WINDOW_MS || 60000));
     if (!(rl as any).allowed) {
       const retry = Math.max(0, (rl as any).resetAt - Date.now());
       return NextResponse.json(

@@ -90,10 +90,11 @@ export const GET = withRouteTiming(async function GET(req: NextRequest) {
   if (isTestMode()) {
     const all = listTestThreadsByUser(user.id);
     const slice = all.slice(offset, offset + limit);
-    const withUnread = slice.map(r => ({ ...r, unread: countUnreadForThread(r.id, user.id) }));
+    const withUnread = slice.map(r => ({ id: r.id, created_at: r.created_at, unread: countUnreadForThread(r.id, user.id) }));
     try {
-      const parsed = (withUnread ?? []).map(r => ({ ...messageThread.parse(r), unread: (r as any).unread as number }));
-      const res = jsonDto(parsed, (messageThread as any).array(), { requestId, status: 200 });
+      const threadWithUnread = messageThread.extend({ unread: (z as any).number() });
+      const schema = z.array(threadWithUnread as any);
+      const res = jsonDto(withUnread as any, schema as any, { requestId, status: 200 });
       res.headers.set('x-total-count', String((all ?? []).length));
       return res;
     } catch {

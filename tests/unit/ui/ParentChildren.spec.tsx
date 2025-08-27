@@ -4,6 +4,19 @@ import { render, screen } from '@testing-library/react';
 import { server } from './mswServer';
 import { http, HttpResponse } from '../../shims/msw';
 import ParentChildrenListPage from '@/app/labs/parent/children/page';
+import { headers, cookies } from 'next/headers';
+
+jest.mock('next/headers', () => {
+  const headersMap = new Map<string,string>();
+  const cookiesMap = new Map<string,string>();
+  return {
+    headers: () => ({ get: (k: string) => headersMap.get(k) || null }),
+    cookies: () => ({
+      get: (k: string) => { const v = cookiesMap.get(k); return v ? { name: k, value: v } : undefined; },
+      getAll: () => Array.from(cookiesMap.entries()).map(([name,value]) => ({ name, value }))
+    })
+  };
+}, { virtual: true });
 
 describe('Parent Children (labs)', () => {
   beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));

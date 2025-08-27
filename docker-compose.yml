@@ -4,14 +4,16 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     image: education-platform-web:local
-    container_name: education-web
     restart: unless-stopped
-    ports:
-      - "3022:3022"
+    expose:
+      - "3022"
     environment:
       # App base URL and port
       - PORT=3022
-      - NEXT_PUBLIC_BASE_URL=http://localhost:3022
+      - NEXT_PUBLIC_BASE_URL=http://web:3022
+      - TEST_MODE=1
+      - NEXT_PUBLIC_TEST_MODE=1
+      - E2E_ALLOW_TEST_MODE=1
       # Supabase (used if provided). Defaults are safe for TEST_MODE.
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:54321}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key-1234567890}
@@ -27,15 +29,14 @@ services:
       - NEXT_RUNTIME_PRIVATE_KEY
       - NEXT_RUNTIME_KEY_ID
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3022/api/ready', r => { try { process.exit(r.statusCode===200?0:1) } catch { process.exit(1) } }).on('error', () => process.exit(1))" ]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3022/api/health', r => { try { process.exit(r.statusCode===200?0:1) } catch { process.exit(1) } }).on('error', () => process.exit(1))" ]
       interval: 10s
       timeout: 5s
       retries: 12
   tests:
     profiles:
       - tests
-    image: mcr.microsoft.com/playwright:v1.46.0-jammy
-    container_name: education-tests
+    image: mcr.microsoft.com/playwright:v1.54.2-jammy
     working_dir: /workspace
     depends_on:
       web:
@@ -47,4 +48,5 @@ services:
     volumes:
       - .:/workspace
       - /workspace/node_modules
-    command: bash -lc "npm ci && npm --workspace tests run test:e2e && mkdir -p reports/e2e artifacts/e2e && cp -r tests/test-results reports/e2e/ || true && cp -r tests/test-results artifacts/e2e/ || true"
+      - /workspace/tests/node_modules
+    command: bash -lc "npm ci --ignore-scripts && mkdir -p reports/e2e artifacts/e2e && npm --workspace tests run test:e2e -- --reporter=list,json=./reports/e2e/summary.json && cp -r tests/test-results reports/e2e/ || true && cp -r tests/test-results artifacts/e2e/ || true"

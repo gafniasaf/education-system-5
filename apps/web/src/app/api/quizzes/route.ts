@@ -72,6 +72,7 @@ export const PATCH = withRouteTiming(async function PATCH(req) {
   const role = (user?.user_metadata as any)?.role ?? undefined;
   if (!user) return NextResponse.json({ error: { code: "UNAUTHENTICATED", message: "Not signed in" }, requestId }, { status: 401, headers: { 'x-request-id': requestId } });
   if (role !== "teacher") return NextResponse.json({ error: { code: "FORBIDDEN", message: "Teachers only" }, requestId }, { status: 403, headers: { 'x-request-id': requestId } });
+  // First enforce rate-limit before strict validation so tests can assert 429
   try {
     const { checkRateLimit } = await import('@/lib/rateLimit');
     const rl = checkRateLimit(`quiz:update:${user.id}`, 120, 60000);
@@ -91,9 +92,12 @@ export const PATCH = withRouteTiming(async function PATCH(req) {
       );
     }
   } catch {}
-  const body = await req.json();
-  const parsed = quizUpdateRequest.parse(body);
-  const out = await updateQuizApi(q.id, parsed);
+  const body = await req.json().catch(() => ({}));
+  const parsed = quizUpdateRequest.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
+  }
+  const out = await updateQuizApi(q.id, parsed.data);
   try {
     const dto = quizDto.parse(out);
     return jsonDto(dto, quizDto as any, { requestId, status: 200 });

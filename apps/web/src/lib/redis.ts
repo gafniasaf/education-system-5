@@ -5,9 +5,10 @@ export function getRedis(): any | null {
 	const url = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || '';
 	if (!url) { client = null; return client; }
 	try {
-		// Prefer ioredis if available, else fetch-based Upstash REST
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		const IORedis = require('ioredis');
+		// Prefer ioredis if available; use guarded dynamic require to avoid bundling crashes in dev
+		// eslint-disable-next-line @typescript-eslint/no-implied-eval
+		const req: any = (Function('return require'))();
+		const IORedis = req('ioredis');
 		client = new IORedis(url);
 		return client;
 	} catch {

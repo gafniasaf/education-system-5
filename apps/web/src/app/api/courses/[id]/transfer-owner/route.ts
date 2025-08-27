@@ -3,6 +3,7 @@ import { withRouteTiming } from "@/server/withRouteTiming";
 import { getCurrentUserInRoute, getRouteHandlerSupabase } from "@/lib/supabaseServer";
 import { z } from "zod";
 import { jsonDto } from "@/lib/jsonDto";
+import { isTestMode } from "@/lib/testMode";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 export const PATCH = withRouteTiming(async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -52,7 +53,9 @@ export const PATCH = withRouteTiming(async function PATCH(req: NextRequest, { pa
   try {
     await supabase.from('audit_logs').insert({ actor_id: user.id, action: 'course.transfer_owner', entity_type: 'course', entity_id: params.id, details: { to: newOwnerId } });
   } catch {}
-  const dto = z.object({ id: z.string().uuid(), teacher_id: z.string().uuid() });
+  const dto = (isTestMode()
+    ? z.object({ id: z.string().min(1), teacher_id: z.string().uuid() })
+    : z.object({ id: z.string().uuid(), teacher_id: z.string().uuid() }));
   return jsonDto(data as any, dto as any, { requestId, status: 200 });
 });
 

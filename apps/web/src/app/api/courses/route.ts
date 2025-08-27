@@ -35,7 +35,15 @@ export const POST = withRouteTiming(createApiHandler({
 			if (testRole !== 'teacher') return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Teachers only' }, requestId }, { status: 403, headers: { 'x-request-id': requestId } });
 			const fakeUser = { id: 'test-teacher-id' } as any;
 			const data = await createCourseApi(fakeUser, input!);
-			return jsonDto(data, course, { requestId, status: 201 });
+			// Map service row to API DTO shape expected by `course` schema
+			const mapped = {
+				id: (data as any).id,
+				title: (data as any).title,
+				description: (data as any).description ?? null,
+				teacherId: String(fakeUser.id),
+				createdAt: (data as any).created_at
+			};
+			return jsonDto(mapped as any, course as any, { requestId, status: 201 });
 		}
 
 		const supabase = getRouteHandlerSupabase();

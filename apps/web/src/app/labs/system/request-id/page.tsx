@@ -9,6 +9,8 @@ export default async function RequestIdPage() {
 
   let requestId = "";
   try {
+    // Prefer gateway (MSW-friendly); then fall back to header fetch for request-id
+    await createHealthGateway().get();
     const res = await serverFetch("/api/health", {
       headers: {
         ...(cookie ? { cookie } : {}),

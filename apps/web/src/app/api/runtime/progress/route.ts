@@ -44,7 +44,13 @@ export const POST = withRouteTiming(async function POST(req: NextRequest) {
     }
   } catch {}
   const parsed = progressUpsertRequest.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
+  if (!parsed.success) {
+    const reqOrigin = getRequestOrigin(req as any);
+    const allowCors = !!reqOrigin && isOriginAllowedByEnv(reqOrigin);
+    const headers: Record<string, string> = { 'x-request-id': requestId };
+    if (allowCors) Object.assign(headers, buildCorsHeaders(reqOrigin));
+    return NextResponse.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message }, requestId }, { status: 400, headers });
+  }
   // Rate limit per alias+course
   try {
     const alias = String((claims as any)?.alias || '');
@@ -69,7 +75,9 @@ export const POST = withRouteTiming(async function POST(req: NextRequest) {
   const headers: Record<string, string> = { 'x-request-id': requestId };
   if (allowCors) Object.assign(headers, buildCorsHeaders(reqOrigin));
   try { incrCounter('rt.progress.ok'); } catch {}
-  return jsonDto({ ok: true } as any, z.object({ ok: z.boolean() }) as any, { requestId, status: 201 });
+  const out = jsonDto({ ok: true } as any, z.object({ ok: z.boolean() }) as any, { requestId, status: 201 });
+  for (const [k, v] of Object.entries(headers)) out.headers.set(k, String(v));
+  return out;
 });
 
 export async function OPTIONS(req: NextRequest) {

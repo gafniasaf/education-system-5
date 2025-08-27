@@ -17,7 +17,8 @@ export function jsonDto<T extends z.ZodTypeAny>(
 ) {
   const { requestId } = opts;
   const status = typeof opts.status === 'number' ? opts.status : 200;
-  const parsed = (schema as any).safeParse(data);
+  const canValidate = schema && typeof (schema as any).safeParse === 'function';
+  const parsed = canValidate ? (schema as any).safeParse(data) : { success: true, data };
   if (!parsed.success) {
     try { getRequestLogger(requestId).error({ issues: redactIssues(parsed.error.issues) }, 'dto_response_validation_failed'); } catch {}
     return NextResponse.json({ error: { code: 'INTERNAL', message: 'Invalid response shape' }, requestId }, { status: 500, headers: { 'x-request-id': requestId } });

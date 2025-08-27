@@ -23,9 +23,10 @@ export const PATCH = withRouteTiming(async function PATCH(req: NextRequest) {
   if (!isTestMode()) return NextResponse.json({ error: { code: 'NOT_IMPLEMENTED', message: 'Prod not implemented' }, requestId }, { status: 501, headers: { 'x-request-id': requestId } });
   const body = await req.json().catch(() => ({}));
   const key = String((body as any).key || '').trim();
-  const value = Boolean((body as any).value);
+  const value = typeof (body as any).value === 'boolean' ? (body as any).value : String((body as any).value).toLowerCase() === 'true';
   if (!key) return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'key is required' }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
-  const out = setTestFeatureFlag(key, value);
+  setTestFeatureFlag(key, value);
+  const out = listTestFeatureFlags();
   const dto2 = z.record(z.boolean());
   return jsonDto(out as any, dto2 as any, { requestId, status: 200 });
 });

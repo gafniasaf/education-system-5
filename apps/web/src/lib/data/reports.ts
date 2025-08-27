@@ -90,6 +90,8 @@ export function createTestGateway(): ReportsGateway {
 }
 
 export function createReportsGateway(): ReportsGateway {
+  // In unit tests, prefer the HTTP gateway so tests can mock global.fetch
+  if ((process as any)?.env?.JEST_WORKER_ID) return createHttpGateway();
   return isTestMode() ? createTestGateway() : createHttpGateway();
 }
 

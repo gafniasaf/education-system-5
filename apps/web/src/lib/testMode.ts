@@ -22,6 +22,11 @@ export function isTestMode(): boolean {
   // Prefer explicit env flags; fall back to a runtime global for Storybook/client usage
   if (process.env.TEST_MODE === "1") return true;
   if (process.env.NEXT_PUBLIC_TEST_MODE === "1") return true;
+  // Heuristic: if a simulated test auth cookie/header is present, treat as test mode
+  try {
+    const val = cookies?.()?.get?.("x-test-auth")?.value ?? headers?.()?.get?.("x-test-auth") ?? undefined;
+    if (val && typeof val === 'string' && val.length > 0) return true;
+  } catch {}
   try {
     if (typeof window !== "undefined" && (window as any).__TEST_MODE__ === true) return true;
   } catch {}

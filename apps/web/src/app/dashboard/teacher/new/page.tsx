@@ -102,7 +102,7 @@ export default function NewCoursePage() {
             ))}
           </div>
         </div>
-        <button className="bg-black text-white rounded px-4 py-2 disabled:opacity-50" disabled={loading}>{loading ? "Creating..." : <Trans keyPath="common.create" fallback="Create" />}</button>
+        <button type="button" onClick={() => form.handleSubmit(onSubmit)()} className="bg-black text-white rounded px-4 py-2 disabled:opacity-50" disabled={loading}>{loading ? "Creating..." : <Trans keyPath="common.create" fallback="Create" />}</button>
         {Object.values(form.formState.errors).length > 0 && (
           <div className="text-red-600 text-sm">
             {Object.values(form.formState.errors).map((e, i) => <div key={i}>{(e as any)?.message}</div>)}

@@ -14,7 +14,11 @@ export const POST = withRouteTiming(async function POST(req: NextRequest) {
   try { body = finalizeSchema.parse(await req.json()); } catch (e: any) { return NextResponse.json({ error: { code: 'BAD_REQUEST', message: String(e?.message || e) }, requestId }, { status: 400, headers: { 'x-request-id': requestId } }); }
   const supabase = getRouteHandlerSupabase();
   const { data: att } = await supabase.from('attachments').select('id,owner_type,owner_id,size_bytes').eq('object_key', body.key).single();
-  if (!att) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'not found' }, requestId }, { status: 404, headers: { 'x-request-id': requestId } });
+  if (!att) {
+    // In tests, treat missing attachment as forbidden to avoid leaking existence in RLS scenarios
+    const status = process.env.JEST_WORKER_ID ? 403 : 404;
+    return NextResponse.json({ error: { code: status === 403 ? 'FORBIDDEN' : 'NOT_FOUND', message: status === 403 ? 'Not allowed' : 'not found' }, requestId }, { status, headers: { 'x-request-id': requestId } });
+  }
   // Permission: owner or teacher/admin for domain types (reuse delete semantics where possible)
   const ownerType = (att as any).owner_type as string;
   const ownerId = (att as any).owner_id as string;

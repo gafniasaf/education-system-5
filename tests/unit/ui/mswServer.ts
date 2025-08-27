@@ -5,6 +5,9 @@ import { http, HttpResponse } from '../../shims/msw';
 export const handlers = [
 	// Default safe handlers; specs can override with server.use(...)
 	http.get('/api/health', () => HttpResponse.json({ ok: true })),
+	http.get('/api/courses', () => HttpResponse.json([{ id: 'c-1', title: 'Course 1' }])),
+	http.get('/api/lessons', () => HttpResponse.json([])),
+	http.get('/api/parent-links', () => HttpResponse.json([{ id: 'pl-1', parent_id: 'p-1', student_id: 's-1', created_at: new Date().toISOString() }])),
 ];
 
 export const server = setupServer(...handlers);

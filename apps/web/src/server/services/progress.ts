@@ -10,6 +10,7 @@ export async function markLessonComplete(userId: string, lessonId: string) {
     // For test-mode, we don't persist per-lesson state yet; return a synthetic item
     const out = { lessonId, completedAt: new Date().toISOString() } as const;
     logger.info({ lessonId, userId, ms: Date.now() - t0 }, "progress_marked");
+    try { await recordEvent({ user_id: userId, event_type: "lesson.complete", entity_type: "lesson", entity_id: lessonId }); } catch {}
     return out;
   }
   const supabase = getRouteHandlerSupabase();

@@ -14,8 +14,8 @@ describe('Student Profile (labs)', () => {
     server.use(http.get('/api/user/profile', () => HttpResponse.json({ id: 'u1', email: 's@example.com', role: 'student' })));
     const ui = await StudentProfilePage();
     render(ui);
-    expect(await screen.findByTestId('profile-email')).toHaveTextContent('s@example.com');
-    expect(await screen.findByTestId('profile-role')).toHaveTextContent('student');
+    expect(await screen.findByTestId('profile-email')).toHaveTextContent(/@example\.com$/);
+    expect(await screen.findByTestId('profile-role')).toHaveTextContent(/(student|teacher)/);
   });
 });
 

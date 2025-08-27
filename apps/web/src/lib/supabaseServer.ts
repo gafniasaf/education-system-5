@@ -48,14 +48,14 @@ export async function getCurrentUser(): Promise<CurrentUser> {
   const testAuth = cookieStore.get("x-test-auth")?.value ?? headers().get("x-test-auth") ?? undefined;
   if (isTestMode() && (testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
     const email = `${testAuth}@example.com`;
-    // Use stable UUIDs in test-mode so schemas that require UUIDs validate correctly
-    const roleToUuid: Record<string, string> = {
-      teacher: "11111111-1111-1111-1111-111111111111",
-      student: "22222222-2222-2222-2222-222222222222",
-      parent:  "33333333-3333-3333-3333-333333333333",
-      admin:   "44444444-4444-4444-4444-444444444444",
+    // Align with tests that expect deterministic ids like 'test-student-id'
+    const roleToId: Record<string, string> = {
+      teacher: "test-teacher-id",
+      student: "test-student-id",
+      parent:  "test-parent-id",
+      admin:   "test-admin-id",
     };
-    const id = roleToUuid[testAuth];
+    const id = roleToId[testAuth];
     return { id, email, user_metadata: { role: testAuth } };
   }
   const supabase = getServerComponentSupabase();
@@ -73,13 +73,13 @@ export async function getCurrentUserInRoute(req?: NextRequest): Promise<CurrentU
   const testAuth = cookieStore.get("x-test-auth")?.value ?? hdrs.get("x-test-auth") ?? undefined;
   if (isTestMode() && (testAuth === "teacher" || testAuth === "student" || testAuth === "parent" || testAuth === "admin")) {
     const email = `${testAuth}@example.com`;
-    const roleToUuid: Record<string, string> = {
-      teacher: "11111111-1111-1111-1111-111111111111",
-      student: "22222222-2222-2222-2222-222222222222",
-      parent:  "33333333-3333-3333-3333-333333333333",
-      admin:   "44444444-4444-4444-4444-444444444444",
+    const roleToId: Record<string, string> = {
+      teacher: "test-teacher-id",
+      student: "test-student-id",
+      parent:  "test-parent-id",
+      admin:   "test-admin-id",
     };
-    const id = roleToUuid[testAuth];
+    const id = roleToId[testAuth];
     return { id, email, user_metadata: { role: testAuth } };
   }
   const supabase = getRouteHandlerSupabase();

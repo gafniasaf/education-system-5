@@ -5,3 +5,6 @@ services:
       - TEST_MODE=1
       - NEXT_PUBLIC_TEST_MODE=1
       - CSRF_DOUBLE_SUBMIT=0
+  tests:
+    # Run a smaller smoke batch that self-starts the dev server inside the tests container
+    command: bash -lc "npm ci --ignore-scripts && npx playwright test -c tests/e2e/playwright.config.ts -g @smoke --reporter=list && mkdir -p reports/e2e artifacts/e2e && cp -r tests/test-results reports/e2e/ || true && cp -r tests/test-results artifacts/e2e/ || true"

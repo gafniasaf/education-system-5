@@ -121,6 +121,8 @@ export function createTestGateway(): NotificationsGateway {
 }
 
 export function createNotificationsGateway(): NotificationsGateway {
+  // In UI (browser/jsdom), prefer HTTP so MSW and fetch stubs can intercept calls
+  if (typeof window !== 'undefined') return createHttpGateway();
   return isTestMode() ? createTestGateway() : createHttpGateway();
 }
 

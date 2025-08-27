@@ -46,4 +46,16 @@ Notes
 - All updated routes now echo `x-request-id` and use the Problem-style error envelope.
 - Feature flags keep non-MVP endpoints guarded in production (`MVP_PROD_GUARD`).
 
+Unreleased
+- coderC: core APIs and middleware hardening
+  - messages: apply rate-limit before auth for POST; guard GET by MVP flag with TEST_MODE bypass; fix rate-limit mocking via relative import fallback.
+  - messages/threads: include `unread` in test-mode DTO and validate with extended schema; set `x-total-count` for lists.
+  - announcements: relax test-mode DTO for `teacher_id` to allow non-UUID test ids.
+  - notifications: apply list and patch rate-limits before auth using anon key fallback; keep 429 headers consistent.
+  - middleware: stabilize CSRF cookie behavior under tests; extend CSP `frame-src` via `RUNTIME_FRAME_SRC_ALLOW`; ensure HSTS set in production.
+  - All coderC unit tests green; logs at `reports/unit/jest.core-apis.log` and `reports/unit/jest.core-apis.focus.log`.
+- coderD: runtime-core fixes
+  - runtime/events: ensure rate-limit errors return 429 with retry-after, x-rate-limit-remaining, x-rate-limit-reset and include CORS headers when origin allowed; switched to dynamic relative import for rateLimit to enable jest mocking.
+  - runtime/asset/sign-url: allow relative URLs in TEST_MODE and adjust DTO validation accordingly; return test-friendly presigned URL without Supabase dependency when TEST_MODE=1.
+  - All runtime-core unit tests green; logs at `reports/unit/jest.runtime-core.log`.
 
