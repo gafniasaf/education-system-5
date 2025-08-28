@@ -7,12 +7,11 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 
-function applySecurityHeaders(res: any, requestId: string, nonce: string) {
+function buildCsp(nonce: string): string {
   try {
     const allowConnect = (process.env.RUNTIME_CORS_ALLOW || '').split(',').map(s => s.trim()).filter(Boolean);
     const connectSrc = [`'self'`, ...allowConnect].join(' ');
     let csp = process.env.NEXT_PUBLIC_CSP || `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc}; frame-ancestors 'none'; frame-src 'self';`;
-    // Extend frame-src in guard path as well when RUNTIME_FRAME_SRC_ALLOW is set
     try {
       const allowFrameEnv = (process.env.RUNTIME_FRAME_SRC_ALLOW || '').split(',').map(s => s.trim()).filter(Boolean);
       if (!process.env.NEXT_PUBLIC_CSP) {
@@ -24,6 +23,13 @@ function applySecurityHeaders(res: any, requestId: string, nonce: string) {
         csp = parts.filter(Boolean).join('; ');
       }
     } catch {}
+    return csp;
+  } catch { return `default-src 'self'; script-src 'self' 'nonce-${nonce}';`; }
+}
+
+function applySecurityHeaders(res: any, requestId: string, nonce: string) {
+  try {
+    const csp = buildCsp(nonce);
     res.headers.set('x-request-id', requestId);
     res.headers.set('Content-Security-Policy', csp);
     if (process.env.NODE_ENV === 'production') {
@@ -99,21 +105,7 @@ export function middleware(req: NextRequest) {
   // Generate a nonce per request for inline scripts
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   headers.set('x-csp-nonce', nonce);
-  const allowConnect = (process.env.RUNTIME_CORS_ALLOW || '').split(',').map(s => s.trim()).filter(Boolean);
-  const connectSrc = [`'self'`, ...allowConnect].join(' ');
-  // Start with conservative defaults; extend frame-src below
-  let csp = process.env.NEXT_PUBLIC_CSP || `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc}; frame-ancestors 'none'; frame-src 'self';`;
-  try {
-    const allowFrameEnv = (process.env.RUNTIME_FRAME_SRC_ALLOW || '').split(',').map(s => s.trim()).filter(Boolean);
-    if (!process.env.NEXT_PUBLIC_CSP) {
-      const parts = csp.split(';').map(s => s.trim());
-      const idx = parts.findIndex(p => p.startsWith('frame-src '));
-      const base = idx >= 0 ? parts[idx] : 'frame-src';
-      const ext = allowFrameEnv.length ? ` ${allowFrameEnv.join(' ')}` : '';
-      if (idx >= 0) parts[idx] = `${base}${ext}`; else parts.push(`${base}${ext}`);
-      csp = parts.filter(Boolean).join('; ');
-    }
-  } catch {}
+  const csp = buildCsp(nonce);
   const res = NextResponse.next({ request: { headers } });
   // Ensure a cookies API exists for unit tests that mock NextResponse.next with a simple object
   try {

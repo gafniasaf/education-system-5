@@ -1,0 +1,77 @@
+{
+  "name": "@lovable/expertfolio",
+  "version": "1.0.0",
+  "description": "Expertfolio adapters and UI components for educational platform integration",
+  "packages": {
+    "@lovable/expertfolio-adapters": {
+      "version": "1.0.0",
+      "description": "Type-safe adapters for Expertfolio API integration",
+      "main": "src/index.ts",
+      "dependencies": {
+        "zod": "^3.25.76",
+        "msw": "^2.0.0"
+      }
+    },
+    "@lovable/expertfolio-ui": {
+      "version": "1.0.0", 
+      "description": "Production-ready UI components for Expertfolio",
+      "main": "src/index.ts",
+      "dependencies": {
+        "react": "^18.3.1",
+        "lucide-react": "^0.462.0",
+        "@radix-ui/react-*": "latest"
+      }
+    }
+  },
+  "endpoints_covered": [
+    {
+      "path": "/api/admin/audit-logs",
+      "methods": ["GET"],
+      "dto_version": "v1",
+      "adapter": "AdminAuditLogsAdapter"
+    },
+    {
+      "path": "/api/admin/audit-logs/:id", 
+      "methods": ["GET"],
+      "dto_version": "v1",
+      "adapter": "AdminAuditLogsAdapter"
+    },
+    {
+      "path": "/api/files/finalize",
+      "methods": ["POST"],
+      "dto_version": "v1",
+      "adapter": "FilesAdapter"
+    },
+    {
+      "path": "/api/files/download-url",
+      "methods": ["GET"],
+      "dto_version": "v1", 
+      "adapter": "FilesAdapter"
+    }
+  ],
+  "dto_versions": {
+    "audit_logs": "v1",
+    "files": "v1"
+  },
+  "requirements": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0",
+    "react": ">=18.0.0"
+  },
+  "features": {
+    "msw_handlers": true,
+    "storybook": true,
+    "typescript": true,
+    "ssr_safe": true,
+    "accessibility": true,
+    "i18n": true,
+    "mobile_optimized": true,
+    "rate_limiting": true,
+    "retry_logic": true
+  },
+  "integration": {
+    "base_url_env": "EXPERTFOLIO_API_BASE_URL",
+    "test_mode_env": "EXPERTFOLIO_TEST_MODE",
+    "feature_flag": "FEATURE_EXPERTFOLIO"
+  }
+}

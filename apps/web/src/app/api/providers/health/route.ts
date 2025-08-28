@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRouteTiming } from "@/server/withRouteTiming";
 import { getCurrentUserInRoute, getRouteHandlerSupabase } from "@/lib/supabaseServer";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimitAsync } from "@/lib/rateLimit";
 import { isTestMode } from "@/lib/testMode";
 import { z } from "zod";
 import { jsonDto } from "@/lib/jsonDto";
@@ -17,7 +17,7 @@ export const GET = withRouteTiming(async function GET(req: NextRequest) {
   try {
     const limit = Number(process.env.PROVIDER_HEALTH_LIMIT || 120);
     const windowMs = Number(process.env.PROVIDER_HEALTH_WINDOW_MS || 60000);
-    const rl = checkRateLimit(`prov:health:${user.id}`, limit, windowMs);
+    const rl = await checkRateLimitAsync(`prov:health:${user.id}`, limit, windowMs);
     if (!rl.allowed) {
       const retry = Math.max(0, rl.resetAt - Date.now());
       return NextResponse.json(

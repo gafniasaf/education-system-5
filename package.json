@@ -19,6 +19,7 @@
     "test:cypress": "npm --workspace tests run test:cypress",
     "smoke-test": "npm --workspace tests run smoke-test",
     "prepare": "husky install",
+    "ci:lint": "cross-env CI=true STRICT_LINT=1 npm run lint",
     "e2e:build": "npm --workspace apps/web run build",
     "e2e:start": "cross-env NODE_ENV=development PORT=%WEB_PORT% TEST_MODE=1 NEXT_PUBLIC_TEST_MODE=1 E2E_ALLOW_TEST_MODE=1 npm --workspace apps/web run start",
     "e2e:health": "cross-env PLAYWRIGHT_BASE_URL=http://localhost:%WEB_PORT% node tests/e2e/wait-for-health.js",

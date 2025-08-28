@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Audit Logs API v1 Schemas",
+  "definitions": {
+    "AuditLogEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the audit log entry"
+        },
+        "actor_id": {
+          "type": "string",
+          "description": "ID of the user who performed the action"
+        },
+        "action": {
+          "type": "string",
+          "description": "The action that was performed"
+        },
+        "entity_type": {
+          "type": ["string", "null"],
+          "description": "Type of entity the action was performed on"
+        },
+        "entity_id": {
+          "type": ["string", "null"],
+          "description": "ID of the entity the action was performed on"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the action occurred"
+        }
+      },
+      "required": ["id", "actor_id", "action", "created_at"],
+      "additionalProperties": false
+    },
+    "AuditLogsQuery": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "sortBy": {
+          "type": "string"
+        },
+        "sortOrder": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "asc"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "entity_type": {
+          "type": "string"
+        },
+        "from_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to_date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AuditLogsResponse": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AuditLogEntry"
+          }
+        },
+        "total": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "offset": {
+          "type": "integer"
+        }
+      },
+      "required": ["logs", "total", "limit", "offset"],
+      "additionalProperties": false
+    }
+  }
+}

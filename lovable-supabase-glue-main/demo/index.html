@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expertfolio Demo - Lovable Integration</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: 222.2 84% 4.9%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --border: 214.3 31.8% 91.4%;
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+        }
+        .dark {
+            --primary: 210 40% 98%;
+            --primary-foreground: 222.2 84% 4.9%;
+            --secondary: 222.2 84% 4.9%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --border: 217.2 32.6% 17.5%;
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        // Mock MSW setup for demo
+        const mockAuditLogs = [
+            {
+                id: 'audit_001',
+                actor_id: 'user_123',
+                action: 'create_assignment',
+                entity_type: 'assignment',
+                entity_id: 'assign_456',
+                created_at: '2024-01-15T10:30:00Z'
+            },
+            {
+                id: 'audit_002',
+                actor_id: 'user_456',
+                action: 'update_profile',
+                entity_type: 'profile',
+                entity_id: 'profile_789',
+                created_at: '2024-01-15T11:45:00Z'
+            }
+        ];
+
+        const mockFiles = [
+            {
+                key: 'file_001',
+                name: 'assignment-document.pdf',
+                size: 1024000,
+                status: 'complete'
+            }
+        ];
+
+        // Mock adapters
+        const mockAdapters = {
+            adminAuditLogsAdapter: {
+                getLogs: async () => ({
+                    data: {
+                        logs: mockAuditLogs,
+                        total: mockAuditLogs.length,
+                        limit: 20,
+                        offset: 0
+                    }
+                })
+            },
+            filesAdapter: {
+                finalizeUpload: async (file) => ({
+                    data: { ok: true }
+                }),
+                getDownloadUrl: async (id) => ({
+                    data: {
+                        url: '/demo/sample-file.pdf',
+                        filename: 'sample-document.pdf',
+                        content_type: 'application/pdf'
+                    }
+                })
+            }
+        };
+
+        // Demo Navigation Component
+        function DemoNavigation({ activeTab, setActiveTab }) {
+            return React.createElement('nav', {
+                className: 'flex space-x-4 mb-6 border-b pb-4'
+            }, [
+                React.createElement('button', {
+                    key: 'audit-logs',
+                    onClick: () => setActiveTab('audit-logs'),
+                    className: `px-4 py-2 rounded ${activeTab === 'audit-logs' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`
+                }, 'Audit Logs'),
+                React.createElement('button', {
+                    key: 'files',
+                    onClick: () => setActiveTab('files'),
+                    className: `px-4 py-2 rounded ${activeTab === 'files' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`
+                }, 'Files')
+            ]);
+        }
+
+        // Mock Audit Logs Page
+        function MockAuditLogsPage() {
+            const [logs, setLogs] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+
+            React.useEffect(() => {
+                mockAdapters.adminAuditLogsAdapter.getLogs().then(result => {
+                    setLogs(result.data.logs);
+                    setLoading(false);
+                });
+            }, []);
+
+            if (loading) {
+                return React.createElement('div', { className: 'animate-pulse' }, [
+                    React.createElement('div', { key: 1, className: 'h-4 bg-gray-200 rounded mb-2' }),
+                    React.createElement('div', { key: 2, className: 'h-4 bg-gray-200 rounded mb-2' }),
+                    React.createElement('div', { key: 3, className: 'h-4 bg-gray-200 rounded' })
+                ]);
+            }
+
+            return React.createElement('div', { className: 'space-y-4' }, [
+                React.createElement('h2', { key: 'title', className: 'text-2xl font-bold' }, 'Admin Audit Logs'),
+                React.createElement('div', { key: 'table', className: 'overflow-x-auto' },
+                    React.createElement('table', { className: 'min-w-full border border-gray-200' }, [
+                        React.createElement('thead', { key: 'header', className: 'bg-gray-50' },
+                            React.createElement('tr', null, [
+                                React.createElement('th', { key: 'time', className: 'px-4 py-2 text-left' }, 'Time'),
+                                React.createElement('th', { key: 'actor', className: 'px-4 py-2 text-left' }, 'Actor'),
+                                React.createElement('th', { key: 'action', className: 'px-4 py-2 text-left' }, 'Action'),
+                                React.createElement('th', { key: 'entity', className: 'px-4 py-2 text-left' }, 'Entity')
+                            ])
+                        ),
+                        React.createElement('tbody', { key: 'body' },
+                            logs.map(log => 
+                                React.createElement('tr', { key: log.id, className: 'border-t' }, [
+                                    React.createElement('td', { key: 'time', className: 'px-4 py-2' }, 
+                                        new Date(log.created_at).toLocaleString()
+                                    ),
+                                    React.createElement('td', { key: 'actor', className: 'px-4 py-2' }, log.actor_id),
+                                    React.createElement('td', { key: 'action', className: 'px-4 py-2' }, log.action),
+                                    React.createElement('td', { key: 'entity', className: 'px-4 py-2' }, 
+                                        log.entity_type ? `${log.entity_type}:${log.entity_id}` : '-'
+                                    )
+                                ])
+                            )
+                        )
+                    ])
+                )
+            ]);
+        }
+
+        // Mock Files Page
+        function MockFilesPage() {
+            const [files, setFiles] = React.useState(mockFiles);
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const newFile = {
+                        key: `file_${Date.now()}`,
+                        name: file.name,
+                        size: file.size,
+                        status: 'uploading'
+                    };
+                    setFiles(prev => [...prev, newFile]);
+
+                    // Simulate upload
+                    setTimeout(() => {
+                        setFiles(prev => prev.map(f => 
+                            f.key === newFile.key ? { ...f, status: 'complete' } : f
+                        ));
+                    }, 2000);
+                }
+            };
+
+            return React.createElement('div', { className: 'space-y-4' }, [
+                React.createElement('h2', { key: 'title', className: 'text-2xl font-bold' }, 'File Management'),
+                React.createElement('div', { key: 'upload', className: 'border-2 border-dashed border-gray-300 rounded-lg p-6' },
+                    React.createElement('input', {
+                        type: 'file',
+                        onChange: handleFileUpload,
+                        className: 'w-full'
+                    })
+                ),
+                React.createElement('div', { key: 'files', className: 'space-y-2' },
+                    files.map(file =>
+                        React.createElement('div', {
+                            key: file.key,
+                            className: 'flex items-center justify-between p-3 border rounded'
+                        }, [
+                            React.createElement('div', { key: 'info' }, [
+                                React.createElement('div', { className: 'font-medium' }, file.name),
+                                React.createElement('div', { className: 'text-sm text-gray-500' }, 
+                                    `${(file.size / 1024).toFixed(1)} KB`
+                                )
+                            ]),
+                            React.createElement('div', { key: 'status', className: 'flex items-center space-x-2' }, [
+                                React.createElement('span', {
+                                    className: `px-2 py-1 rounded text-xs ${
+                                        file.status === 'complete' ? 'bg-green-100 text-green-800' :
+                                        file.status === 'uploading' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }`
+                                }, file.status),
+                                file.status === 'complete' && React.createElement('button', {
+                                    onClick: () => alert('Download triggered'),
+                                    className: 'text-blue-500 hover:text-blue-700'
+                                }, 'Download')
+                            ])
+                        ])
+                    )
+                )
+            ]);
+        }
+
+        // Main Demo App
+        function DemoApp() {
+            const [activeTab, setActiveTab] = React.useState('audit-logs');
+
+            return React.createElement('div', { className: 'container mx-auto p-6' }, [
+                React.createElement('header', { key: 'header', className: 'mb-8' }, [
+                    React.createElement('h1', { className: 'text-3xl font-bold text-gray-900' }, 'Expertfolio Demo'),
+                    React.createElement('p', { className: 'text-gray-600 mt-2' }, 
+                        'Interactive demo of Lovable Expertfolio components with MSW'
+                    )
+                ]),
+                React.createElement(DemoNavigation, { 
+                    key: 'nav',
+                    activeTab, 
+                    setActiveTab 
+                }),
+                React.createElement('main', { key: 'main' },
+                    activeTab === 'audit-logs' ? 
+                        React.createElement(MockAuditLogsPage) :
+                        React.createElement(MockFilesPage)
+                )
+            ]);
+        }
+
+        // Render the demo
+        ReactDOM.render(React.createElement(DemoApp), document.getElementById('root'));
+    </script>
+</body>
+</html>

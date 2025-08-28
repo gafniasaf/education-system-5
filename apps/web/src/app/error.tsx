@@ -4,8 +4,13 @@ import React, { useEffect } from "react";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.error(error);
+    try {
+      const rid = (document?.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('x-request-id='))?.split('=')[1] || undefined;
+      fetch('/api/internal/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ level: 'error', message: error?.message || 'unknown_error', requestId: rid || null }) }).catch(() => {});
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error(error);
+    }
   }, [error]);
 
   return (

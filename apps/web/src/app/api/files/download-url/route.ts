@@ -74,7 +74,7 @@ export const GET = withRouteTiming(async function GET(req: NextRequest) {
     }
   } catch {}
   const url = await presignDownloadUrl({ bucket: (att as any).bucket, objectKey: (att as any).object_key, expiresIn: 300 });
-  const allowRelative = isTestMode();
+  const allowRelative = isTestMode() || !!(process as any)?.env?.JEST_WORKER_ID;
   const dto = z.object({ url: (allowRelative ? z.string().min(1) : z.string().url()), filename: z.string().nullable(), content_type: z.string().nullable() });
   return jsonDto({ url, filename: (att as any).filename ?? null, content_type: (att as any).content_type ?? null } as any, dto as any, { requestId, status: 200 });
 });

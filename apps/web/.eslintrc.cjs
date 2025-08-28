@@ -23,6 +23,12 @@ module.exports = {
 					}
 				]
 			}
+		},
+		{
+			files: ["src/server/**/*.{ts,tsx}", "src/app/api/**/*.{ts,tsx}"],
+			rules: {
+				"@next/next/no-server-import-in-page": "off"
+			}
 		}
 	]
 };

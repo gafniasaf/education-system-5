@@ -1,3 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+import { withRouteTiming } from "@/server/withRouteTiming";
+import { jsonDto } from "@/lib/jsonDto";
+import { z } from "zod";
+import { isTestMode } from "@/lib/testMode";
+import { getCurrentUserInRoute } from "@/lib/supabaseServer";
+import { listTestParentChildren, addTestParentLink, removeTestParentLink } from "@/lib/testStore";
+
+const rowSchema = z.object({ id: z.string(), parent_id: z.string(), student_id: z.string(), created_at: z.string() });
+const listSchema = z.array(rowSchema);
+
+function makeId(): string {
+  const hex = '0123456789abcdef';
+  const rand = (n: number) => Array.from({ length: n }, () => hex[Math.floor(Math.random() * hex.length)]).join('');
+  return `${rand(8)}-${rand(4)}-${rand(4)}-${rand(4)}-${rand(12)}`;
+}
+
+export const GET = withRouteTiming(async function GET(req: NextRequest) {
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const user = await getCurrentUserInRoute(req);
+  if (!user) return NextResponse.json({ error: { code: 'UNAUTHENTICATED', message: 'Not signed in' }, requestId }, { status: 401, headers: { 'x-request-id': requestId } });
+  const q = new URL(req.url).searchParams;
+  const parent_id = (q.get('parent_id') || '').trim();
+  if (!parent_id) return NextResponse.json({ error: { code: 'BAD_REQUEST', message: 'parent_id is required' }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
+  if (!isTestMode()) return NextResponse.json({ error: { code: 'NOT_IMPLEMENTED', message: 'Prod not implemented' }, requestId }, { status: 501, headers: { 'x-request-id': requestId } });
+  const rows = (listTestParentChildren as any)(parent_id) as any[];
+  return jsonDto(rows as any, listSchema as any, { requestId, status: 200 });
+});
+
+export const POST = withRouteTiming(async function POST(req: NextRequest) {
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const user = await getCurrentUserInRoute(req);
+  if (!user) return NextResponse.json({ error: { code: 'UNAUTHENTICATED', message: 'Not signed in' }, requestId }, { status: 401, headers: { 'x-request-id': requestId } });
+  const body = await req.json().catch(() => ({}));
+  const parsed = z.object({ parent_id: z.string().min(1), student_id: z.string().min(1) }).safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
+  if (!isTestMode()) return NextResponse.json({ error: { code: 'NOT_IMPLEMENTED', message: 'Prod not implemented' }, requestId }, { status: 501, headers: { 'x-request-id': requestId } });
+  const row = { id: makeId(), parent_id: parsed.data.parent_id, student_id: parsed.data.student_id, created_at: new Date().toISOString() };
+  (addTestParentLink as any)({ id: row.id, parent_id: row.parent_id, student_id: row.student_id, created_at: row.created_at });
+  return jsonDto(row as any, rowSchema as any, { requestId, status: 201 });
+});
+
+export const DELETE = withRouteTiming(async function DELETE(req: NextRequest) {
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const user = await getCurrentUserInRoute(req);
+  if (!user) return NextResponse.json({ error: { code: 'UNAUTHENTICATED', message: 'Not signed in' }, requestId }, { status: 401, headers: { 'x-request-id': requestId } });
+  const body = await req.json().catch(() => ({}));
+  const parsed = z.object({ parent_id: z.string().min(1), student_id: z.string().min(1) }).safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message }, requestId }, { status: 400, headers: { 'x-request-id': requestId } });
+  if (!isTestMode()) return NextResponse.json({ error: { code: 'NOT_IMPLEMENTED', message: 'Prod not implemented' }, requestId }, { status: 501, headers: { 'x-request-id': requestId } });
+  (removeTestParentLink as any)(parsed.data.parent_id, parsed.data.student_id);
+  return jsonDto({ ok: true } as any, z.object({ ok: z.boolean() }) as any, { requestId, status: 200 });
+});
+
+export const dynamic = 'force-dynamic';
+
 /**
  * Parent links API
  *

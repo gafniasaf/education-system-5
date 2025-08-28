@@ -2,14 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
   eslint: {
-    // Allow e2e/CI builds to proceed even if there are lint warnings/errors.
-    ignoreDuringBuilds: true,
+    // Only ignore during local dev if explicitly opted in; enforce in CI by default
+    ignoreDuringBuilds: process.env.CI !== 'true' && process.env.STRICT_LINT !== '1' ? true : false,
   },
   experimental: {
     typedRoutes: true,
-    optimizePackageImports: ["react", "react-dom"]
+    optimizePackageImports: ["react", "react-dom"],
+    externalDir: true,
   },
-  transpilePackages: ['@shared', '@education/shared'],
+  transpilePackages: ['@shared', '@education/shared', '@lovable/expertfolio-ui', '@lovable/expertfolio-adapters'],
   output: 'standalone',
   headers: async () => [
     {

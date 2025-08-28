@@ -2,7 +2,7 @@
 const maybeZod = (() => { try { return require.resolve('zod'); } catch { return 'zod'; } })();
 
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: process.env.JSDOM === '1' ? 'jsdom' : 'node',
   roots: ['<rootDir>/unit'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transform: {
@@ -16,6 +16,9 @@ module.exports = {
     '^msw$': '<rootDir>/shims/msw.ts',
     '^react-hook-form$': '<rootDir>/shims/react-hook-form.ts',
     '^zod$': maybeZod,
+    '^@lovable/expertfolio-adapters$': '<rootDir>/unit/shims/lovable-expertfolio-adapters.ts',
+    '^@lovable/expertfolio-ui$': '<rootDir>/unit/shims/lovable-expertfolio-ui.ts',
+    '^lucide-react$': '<rootDir>/unit/shims/lucide-react.ts',
     '^@shared$': '<rootDir>/../packages/shared/src/index.ts',
     '^@shared/(.*)$': '<rootDir>/../packages/shared/src/$1',
     '^@education/shared$': '<rootDir>/../packages/shared/src/index.ts',

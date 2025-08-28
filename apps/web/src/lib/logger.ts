@@ -5,6 +5,7 @@
  * Use `getRequestLogger(requestId)` to attach tracing context.
  */
 import pino from "pino";
+import crypto from "crypto";
 
 const isCI = process.env.CI === "true" || process.env.CI === "1";
 const wantPretty = process.env.PINO_PRETTY === "1";
@@ -73,12 +74,29 @@ export const logger = pino(
       }
 );
 
+/** One-way hash for correlating identifiers without logging raw values. */
+export function hashIdentifier(value: string): string {
+  try {
+    return crypto.createHash('sha256').update(String(value)).digest('hex');
+  } catch {
+    return String(value);
+  }
+}
+
 /** Return a child logger bound to a given request id. */
 export function getRequestLogger(requestId: string) {
   const dev = process.env.DEV_ID || undefined;
   const branch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GITHUB_REF_NAME || undefined;
   const commit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || undefined;
   return logger.child({ requestId, dev, branch, commit });
+}
+
+/** Child logger that also binds a hashed user id for correlation without PII. */
+export function getUserLogger(requestId: string, userId?: string | null) {
+  const base = getRequestLogger(requestId);
+  if (!userId) return base;
+  const uidHash = hashIdentifier(String(userId));
+  return (base as any).child ? (base as any).child({ uidHash }) : base;
 }
 
 
