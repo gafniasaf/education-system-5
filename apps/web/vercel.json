@@ -2,6 +2,6 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "npm install --ignore-scripts --legacy-peer-deps",
-  "buildCommand": "node -e \"const fs=require('fs');const del=p=>{try{fs.rmSync(p,{recursive:true,force:true})}catch{}};del('src/app/labs/expertfolio');del('src/app/dashboard/student/[courseId]/quizzes/[quizId]/play/QuizPlayerClient.stories.tsx');\" && next build",
+  "buildCommand": "node -e \"const fs=require('fs'),path=require('path');const del=p=>{try{fs.rmSync(p,{recursive:true,force:true})}catch{}};del('src/app/labs/expertfolio');const rmStories=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()) rmStories(p); else if(/\\.stories\\.[jt]sx?$/.test(e.name)) try{fs.rmSync(p,{force:true})}catch{}}};rmStories('src');\" && next build",
   "outputDirectory": ".next"
 }
