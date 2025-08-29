@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "installCommand": "npm install --ignore-scripts --legacy-peer-deps",
+  "buildCommand": "find src -name '*.stories.*' -delete && rm -rf src/app/labs/expertfolio && next build",
+  "outputDirectory": ".next"
+}
