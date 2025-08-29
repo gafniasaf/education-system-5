@@ -1,0 +1,1 @@
+{\"version\":2,\"framework\":\"nextjs\",\"installCommand\":\"npm install --ignore-scripts --legacy-peer-deps\",\"buildCommand\":\"node -e \\\"require(''fs'').rmSync(''src/app/labs/expertfolio'',{recursive:true,force:true})\\\" && next build\",\"outputDirectory\":\".next\"}
